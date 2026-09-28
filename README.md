@@ -1,6 +1,6 @@
-# MAKER'S ASYLUM INNOVATION SCHOOL
-## YY COHORT
-## NAME OF PROJECT
+# MAKER'S ASYLUM + KULFI Play it Forward (PiF) Partnership
+## 2026 Week 40 COHORT 06
+## KAPUT
 
 Describe the project.
 Describe what are the contents of each folder - CODE, CAD, Electronics etc
