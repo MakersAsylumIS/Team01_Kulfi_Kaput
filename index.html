@@ -1,0 +1,1472 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CrowPanel Web Lab</title>
+<style>
+  :root {
+    --bg: #f6f3f8;
+    --panel: #ffffff;
+    --ink: #1d1b26;
+    --muted: #6b6878;
+    --line: #e4dfea;
+    --accent: #302cfb;
+    --accent-ink: #ffffff;
+    --pink: #fe019a;
+    --ok: #12a150;
+    --bad: #d93a3a;
+    --radius: 12px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #14131a; --panel: #1e1c27; --ink: #ecebf2; --muted: #9a97a8; --line: #2f2c3b;
+      --accent: #6b67ff;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; background: var(--bg); color: var(--ink); }
+  header {
+    display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+    padding: 12px 20px; background: var(--panel); border-bottom: 1px solid var(--line);
+    position: sticky; top: 0; z-index: 5;
+  }
+  header h1 { font-size: 17px; margin: 0 12px 0 0; letter-spacing: .2px; }
+  header h1 span { color: var(--pink); }
+  .pill { padding: 3px 10px; border-radius: 999px; font-size: 12px; background: var(--line); color: var(--muted); }
+  .pill.on { background: color-mix(in srgb, var(--ok) 18%, transparent); color: var(--ok); }
+  .spacer { flex: 1; }
+  .layout { display: grid; grid-template-columns: 190px 1fr; min-height: calc(100vh - 58px); }
+  nav { border-right: 1px solid var(--line); padding: 12px 8px; background: var(--panel); }
+  nav button {
+    display: block; width: 100%; text-align: left; border: 0; background: none; color: var(--ink);
+    padding: 9px 12px; border-radius: 8px; font: inherit; cursor: pointer; margin-bottom: 2px;
+  }
+  nav button:hover { background: var(--line); }
+  nav button.active { background: var(--accent); color: var(--accent-ink); }
+  main { padding: 20px; max-width: 1100px; }
+  section { display: none; }
+  section.active { display: block; }
+  h2 { font-size: 20px; margin: 0 0 4px; }
+  .sub { color: var(--muted); margin: 0 0 16px; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; margin-bottom: 16px; }
+  .card h3 { margin: 0 0 12px; font-size: 14px; text-transform: uppercase; letter-spacing: .6px; color: var(--muted); }
+  .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 10px; }
+  .grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+  label.f { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--muted); }
+  input[type=text], input[type=number], select, textarea {
+    font: inherit; color: var(--ink); background: var(--bg); border: 1px solid var(--line);
+    border-radius: 8px; padding: 7px 9px;
+  }
+  textarea { width: 100%; min-height: 90px; resize: vertical; }
+  input[type=color] { width: 44px; height: 34px; padding: 2px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); }
+  input[type=range] { width: 220px; accent-color: var(--accent); }
+  button.b {
+    font: inherit; border: 1px solid var(--line); background: var(--bg); color: var(--ink);
+    padding: 7px 14px; border-radius: 8px; cursor: pointer;
+  }
+  button.b:hover { border-color: var(--accent); }
+  button.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+  button.b:disabled { opacity: .5; cursor: not-allowed; }
+  .swatch { width: 34px; height: 34px; border-radius: 8px; border: 1px solid var(--line); cursor: pointer; }
+  .big { font-size: 56px; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1; }
+  .muted { color: var(--muted); }
+  canvas.view { width: 100%; height: auto; background: #000; border-radius: 8px; display: block; }
+  .progress { height: 8px; background: var(--line); border-radius: 99px; overflow: hidden; flex: 1; min-width: 160px; }
+  .progress > div { height: 100%; width: 0; background: var(--accent); transition: width .1s; }
+  #log { height: 380px; overflow: auto; background: #0e0d13; color: #cfe8cf; font: 12px/1.4 ui-monospace, Consolas, monospace; padding: 10px; border-radius: 8px; white-space: pre-wrap; }
+  #log .tx { color: #9db7ff; }
+  #log .err { color: #ff8a8a; }
+  .warn { background: color-mix(in srgb, var(--bad) 12%, transparent); border: 1px solid var(--bad); color: var(--ink); padding: 12px 14px; border-radius: 10px; margin-bottom: 16px; display: none; }
+  .rangebar { position: relative; height: 18px; background: var(--line); border-radius: 99px; margin: 16px 0 6px; }
+  .rangebar .band { position: absolute; top: 0; bottom: 0; background: color-mix(in srgb, var(--pink) 55%, transparent); border-radius: 99px; }
+  .rangebar .marker { position: absolute; top: -5px; width: 4px; height: 28px; margin-left: -2px; background: var(--ink); border-radius: 2px; display: none; }
+  .pill.trig { background: color-mix(in srgb, var(--pink) 22%, transparent); color: var(--pink); font-weight: 600; }
+  .pill.idle { background: color-mix(in srgb, var(--accent) 16%, transparent); color: var(--accent); }
+  .grid-wide { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; }
+  @media (max-width: 900px) { .grid-wide { grid-template-columns: 1fr; } }
+  #nzLog { max-height: 180px; overflow: auto; font: 12px/1.5 ui-monospace, Consolas, monospace; color: var(--muted); }
+  .stats { display: flex; gap: 24px; flex-wrap: wrap; }
+  .stats div b { display: block; font-size: 20px; font-variant-numeric: tabular-nums; }
+  .part { border-left: 4px solid var(--accent); }
+  .part .head { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; }
+  .part .head select { font-weight: 600; }
+  .part .head .spacer { flex: 1; }
+  .part textarea { min-height: 54px; }
+  .iconbtn { font: inherit; border: 1px solid var(--line); background: var(--bg); color: var(--ink); width: 32px; height: 32px; border-radius: 8px; cursor: pointer; }
+  .iconbtn:hover { border-color: var(--accent); }
+  .iconbtn:disabled { opacity: .35; cursor: default; }
+  .sizeval { width: 64px; }
+  kbd { font: 12px ui-monospace, Consolas, monospace; background: var(--line); padding: 1px 5px; border-radius: 4px; }
+  @media (max-width: 720px) {
+    .layout { grid-template-columns: 1fr; }
+    nav { display: flex; overflow-x: auto; border-right: 0; border-bottom: 1px solid var(--line); }
+    nav button { white-space: nowrap; width: auto; }
+    main { padding: 16px; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>CrowPanel <span>Web Lab</span></h1>
+  <span id="status" class="pill">Not connected</span>
+  <span id="devinfo" class="muted"></span>
+  <div class="spacer"></div>
+  <button id="btnConnect" class="b primary">Connect board</button>
+  <button id="btnDisconnect" class="b" disabled>Disconnect</button>
+</header>
+
+<div class="layout">
+  <nav id="nav">
+    <button data-tab="display" class="active">Display</button>
+    <button data-tab="text">Text</button>
+    <button data-tab="image">Image</button>
+    <button data-tab="servo">Servo</button>
+    <button data-tab="ultra">Ultrasonic</button>
+    <button data-tab="radar">Radar</button>
+    <button data-tab="touch">Touch</button>
+    <button data-tab="nazr">Nazr</button>
+    <button data-tab="console">Console</button>
+  </nav>
+
+  <main>
+    <div id="noSerial" class="warn">
+      This browser can't talk to USB devices. Open this page in <b>Chrome</b> or <b>Edge</b> on
+      <kbd>http://localhost:8000</kbd>.
+    </div>
+
+    <!-- DISPLAY -->
+    <section id="tab-display" class="active">
+      <h2>Display</h2>
+      <p class="sub">Orientation, backlight, solid colors and test patterns.</p>
+      <div class="grid2">
+        <div class="card">
+          <h3>Orientation</h3>
+          <div class="row">
+            <select id="dispRot" class="rotSelect">
+              <option value="0">Portrait (320×480)</option>
+              <option value="1" selected>Landscape (480×320)</option>
+              <option value="2">Portrait, flipped</option>
+              <option value="3">Landscape, flipped</option>
+            </select>
+          </div>
+          <h3 style="margin-top:16px">Backlight</h3>
+          <div class="row">
+            <input id="bl" type="range" min="0" max="255" value="255">
+            <span id="blVal" class="muted">255</span>
+            <button id="btnFade" class="b">Fade test</button>
+          </div>
+        </div>
+        <div class="card">
+          <h3>Fill color</h3>
+          <div class="row" id="swatches"></div>
+          <div class="row">
+            <input id="fillColor" type="color" value="#fe019a">
+            <button id="btnFill" class="b">Fill with this color</button>
+          </div>
+          <div class="row">
+            <button id="btnColorTest" class="b">Run color test (R G B W K)</button>
+            <button id="btnTestPat" class="b">Test pattern</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TEXT -->
+    <section id="tab-text">
+      <h2>Text</h2>
+      <p class="sub">Build a page from parts (title, heading, body…), or show one big auto-sized text.</p>
+      <div class="row">
+        <button id="modePage" class="b primary">Page with parts</button>
+        <button id="modeQuick" class="b">Quick big text</button>
+      </div>
+
+      <div id="pagePane">
+        <div class="card">
+          <h3>Page</h3>
+          <div class="row">
+            <label class="f">Orientation
+              <select id="pgRot" class="rotSelect">
+                <option value="0">Portrait</option>
+                <option value="1" selected>Landscape</option>
+                <option value="2">Portrait, flipped</option>
+                <option value="3">Landscape, flipped</option>
+              </select>
+            </label>
+            <label class="f">Background <input id="pgBg" type="color" value="#fe019a"></label>
+            <label class="f">Margin <span><input id="pgMargin" type="range" min="0" max="80" value="24" style="width:130px"> <span id="pgMarginVal">24</span>px</span></label>
+            <label class="f">Vertical position
+              <select id="pgValign">
+                <option value="top">Top</option>
+                <option value="center">Center</option>
+                <option value="spread">Spread out</option>
+              </select>
+            </label>
+            <label class="muted" style="align-self:end"><input id="pgFit" type="checkbox" checked> Shrink to fit if too long</label>
+          </div>
+        </div>
+
+        <div id="partsList"></div>
+
+        <div class="card">
+          <h3>Add a part</h3>
+          <div class="row" id="addPartBtns"></div>
+          <div class="row" style="margin-top:6px">
+            <button id="btnPage" class="b primary">Show on screen</button>
+            <label class="muted"><input id="pgAuto" type="checkbox" checked> Update while editing</label>
+            <button id="btnPageReset" class="b">Reset to example</button>
+            <span id="pgResult" class="muted"></span>
+          </div>
+        </div>
+      </div>
+
+      <div id="quickPane" class="card" style="display:none">
+        <p class="muted" style="margin-top:0">The board finds the largest size that fits inside the margin.</p>
+        <textarea id="txt">Hello from my new CrowPanel display</textarea>
+        <div class="row" style="margin-top:10px">
+          <label class="f">Layout
+            <select id="txtMode">
+              <option value="wrap">Wrapped lines</option>
+              <option value="words">One word per line</option>
+              <option value="letters">Vertical letters</option>
+            </select>
+          </label>
+          <label class="f">Orientation
+            <select id="txtRot" class="rotSelect">
+              <option value="0">Portrait</option>
+              <option value="1" selected>Landscape</option>
+              <option value="2">Portrait, flipped</option>
+              <option value="3">Landscape, flipped</option>
+            </select>
+          </label>
+          <label class="f">Font
+            <select id="txtFont">
+              <option value="0">Sans Bold</option>
+              <option value="1">Sans</option>
+              <option value="2">Serif Bold</option>
+              <option value="3">Serif</option>
+              <option value="4">Mono Bold</option>
+              <option value="5">Orbitron</option>
+              <option value="6">Satisfy (script)</option>
+              <option value="7">Yellowtail (script)</option>
+              <option value="8">Sora</option>
+              <option value="9">Sora Bold</option>
+              <option value="10">Poppins</option>
+              <option value="11">Poppins Bold</option>
+            </select>
+          </label>
+          <label class="f">Text <input id="txtFg" type="color" value="#000000"></label>
+          <label class="f">Background <input id="txtBg" type="color" value="#fe019a"></label>
+          <label class="f">Margin <span><input id="txtMargin" type="range" min="0" max="80" value="32" style="width:140px"> <span id="txtMarginVal">32</span>px</span></label>
+        </div>
+        <div class="row">
+          <button id="btnText" class="b primary">Show on screen</button>
+          <label class="muted"><input id="txtAuto" type="checkbox" checked> Update while typing</label>
+          <span id="txtResult" class="muted"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- IMAGE -->
+    <section id="tab-image">
+      <h2>Image</h2>
+      <p class="sub">Pick or drop any image (PNG, JPG, GIF, WebP…). It's resized here and sent to the screen.</p>
+      <div class="grid2">
+        <div class="card">
+          <div class="row"><input id="imgFile" type="file" accept="image/*"></div>
+          <div class="row">
+            <label class="f">Orientation
+              <select id="imgRot" class="rotSelect">
+                <option value="0">Portrait (320×480)</option>
+                <option value="1" selected>Landscape (480×320)</option>
+                <option value="2">Portrait, flipped</option>
+                <option value="3">Landscape, flipped</option>
+              </select>
+            </label>
+            <label class="f">Fit
+              <select id="imgFit">
+                <option value="contain">Fit (whole image)</option>
+                <option value="cover">Fill (crop edges)</option>
+                <option value="stretch">Stretch</option>
+              </select>
+            </label>
+            <label class="f">Background <input id="imgBg" type="color" value="#000000"></label>
+          </div>
+          <div class="row">
+            <button id="btnImg" class="b primary" disabled>Send to screen</button>
+            <div class="progress"><div id="imgProg"></div></div>
+            <span id="imgInfo" class="muted"></span>
+          </div>
+          <p class="muted" style="margin:0">A full screen takes about 7 seconds over USB.</p>
+        </div>
+        <div class="card">
+          <h3>Preview (exactly what the screen will show)</h3>
+          <canvas id="imgPreview" class="view" width="480" height="320"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- SERVO -->
+    <section id="tab-servo">
+      <h2>Servo</h2>
+      <p class="sub">Servo signal on IO22.</p>
+      <div class="grid2">
+        <div class="card">
+          <div class="big"><span id="servoVal">90</span>°</div>
+          <div class="row" style="margin-top:12px">
+            <input id="servo" type="range" min="0" max="180" value="90" style="width:100%">
+          </div>
+          <div class="row">
+            <button class="b servoJump" data-a="0">0°</button>
+            <button class="b servoJump" data-a="45">45°</button>
+            <button class="b servoJump" data-a="90">90°</button>
+            <button class="b servoJump" data-a="135">135°</button>
+            <button class="b servoJump" data-a="180">180°</button>
+          </div>
+          <div class="row">
+            <label class="f">Sweep from (°) <input id="sweepFrom" type="number" min="0" max="180" value="0" style="width:80px"></label>
+            <label class="f">to (°) <input id="sweepTo" type="number" min="0" max="180" value="180" style="width:80px"></label>
+            <label class="f">Step (°)
+              <select id="sweepStep"><option>1</option><option selected>2</option><option>5</option><option>10</option></select>
+            </label>
+            <label class="f">Sweep speed <input id="sweepMs" type="range" min="5" max="60" value="15" style="width:140px"></label>
+          </div>
+          <div class="row">
+            <button id="btnSweep" class="b">Start sweep</button>
+            <span id="sweepInfo" class="muted">Sweeps 0° ↔ 180°</span>
+          </div>
+        </div>
+        <div class="card">
+          <h3>Pulse range</h3>
+          <p class="muted" style="margin-top:0">Use 1000–2000 µs if the servo buzzes at the ends.</p>
+          <div class="row">
+            <label class="f">0° pulse (µs) <input id="sMin" type="number" value="500" min="300" max="3000" step="50"></label>
+            <label class="f">180° pulse (µs) <input id="sMax" type="number" value="2500" min="300" max="3000" step="50"></label>
+            <button id="btnServoCfg" class="b">Apply</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ULTRASONIC -->
+    <section id="tab-ultra">
+      <h2>Ultrasonic</h2>
+      <p class="sub">TRIG on IO25, ECHO on IO32.</p>
+      <div class="card">
+        <div class="row" style="justify-content:space-between">
+          <div class="big"><span id="distVal">--</span> <span style="font-size:24px">cm</span></div>
+          <div class="stats">
+            <div><span class="muted">Min</span><b id="dMin">--</b></div>
+            <div><span class="muted">Max</span><b id="dMax">--</b></div>
+            <div><span class="muted">Average</span><b id="dAvg">--</b></div>
+          </div>
+        </div>
+        <div class="row" style="margin-top:12px">
+          <button id="btnStream" class="b primary">Start live readings</button>
+          <button id="btnDistOnce" class="b">Read once</button>
+          <label class="f">Readings every
+            <select id="streamMs"><option>100</option><option selected>250</option><option>500</option><option>1000</option></select>
+          </label>
+          <label class="f">Graph window
+            <select id="gWin"><option value="1">1 min</option><option value="5">5 min</option><option value="20" selected>20 min</option></select>
+          </label>
+          <button id="btnClearGraph" class="b">Clear</button>
+        </div>
+        <canvas id="graph" class="view" width="1000" height="320"></canvas>
+      </div>
+    </section>
+
+    <!-- RADAR -->
+    <section id="tab-radar">
+      <h2>Radar</h2>
+      <p class="sub">The servo turns the ultrasonic sensor and measures at every step. Mount the sensor on the servo horn.</p>
+      <div class="card">
+        <div class="row">
+          <button id="btnRadar" class="b primary">Start radar</button>
+          <label class="f">Range
+            <select id="rRange"><option>50</option><option selected>100</option><option>200</option><option>400</option></select>
+          </label>
+          <label class="f">Step
+            <select id="rStep"><option>1</option><option selected>2</option><option>5</option></select>
+          </label>
+          <label class="f">Settle time (ms)
+            <input id="rSettle" type="number" value="35" min="0" max="500" step="5" style="width:90px">
+          </label>
+          <span id="rInfo" class="muted"></span>
+        </div>
+        <canvas id="radar" class="view" width="900" height="480"></canvas>
+      </div>
+    </section>
+
+    <!-- TOUCH -->
+    <section id="tab-touch">
+      <h2>Touch</h2>
+      <p class="sub">Touch the screen; your strokes show up here.</p>
+      <div class="grid2">
+        <div class="card">
+          <canvas id="touchCanvas" class="view" width="480" height="320" style="background:#111"></canvas>
+          <p id="touchXY" class="muted" style="margin:8px 0 0">No touch yet</p>
+        </div>
+        <div class="card">
+          <h3>Options</h3>
+          <div class="row">
+            <label><input id="paintOn" type="checkbox"> Also draw on the board's screen</label>
+            <input id="paintColor" type="color" value="#ffffff">
+          </div>
+          <div class="row">
+            <button id="btnTouchClear" class="b">Clear</button>
+            <button id="btnCal" class="b">Calibrate touch</button>
+          </div>
+          <p class="muted">Calibration shows arrows in each corner of the board's screen. Tap each one.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- NAZR -->
+    <section id="tab-nazr">
+      <h2>Nazr</h2>
+      <p class="sub">When the ultrasonic sensor sees something inside your distance range, the screen and servo react. When it leaves, they go back to idle.</p>
+      <div class="card">
+        <div class="row" style="justify-content:space-between">
+          <div class="row" style="margin:0">
+            <button id="nzStart" class="b primary">Start Nazr</button>
+            <span id="nzState" class="pill">Stopped</span>
+            <span id="nzCount" class="muted">0 triggers</span>
+          </div>
+          <div class="big"><span id="nzDist">--</span> <span style="font-size:24px">cm</span></div>
+        </div>
+        <div class="rangebar"><div id="nzBand" class="band"></div><div id="nzMarker" class="marker"></div></div>
+        <div class="row muted" style="justify-content:space-between; font-size:12px"><span>0 cm</span><span id="nzScaleMax">100 cm</span></div>
+        <div class="row">
+          <label class="f">Trigger from (cm) <input id="nzMin" type="number" min="2" max="400" value="20" style="width:90px"></label>
+          <label class="f">to (cm) <input id="nzMax" type="number" min="2" max="400" value="40" style="width:90px"></label>
+          <label class="f">Check every
+            <select id="nzInterval"><option value="100">100 ms</option><option value="150" selected>150 ms</option><option value="250">250 ms</option><option value="500">500 ms</option></select>
+          </label>
+          <label class="f">Readings in range before triggering
+            <input id="nzConfirm" type="number" min="1" max="20" value="2" style="width:90px">
+          </label>
+          <label class="f">Back to idle after leaving (ms)
+            <input id="nzRelease" type="number" min="0" max="60000" step="250" value="1500" style="width:110px">
+          </label>
+        </div>
+      </div>
+
+      <h3 class="muted" style="margin:20px 0 10px; font-size:14px; text-transform:uppercase; letter-spacing:.6px">When an object is in range</h3>
+      <div class="grid-wide">
+        <div class="card"><h3>Screen</h3><div id="nzTrigText"></div></div>
+        <div class="card"><h3>Servo</h3><div id="nzTrigServo"></div></div>
+      </div>
+
+      <h3 class="muted" style="margin:20px 0 10px; font-size:14px; text-transform:uppercase; letter-spacing:.6px">When nothing is in range (idle)</h3>
+      <div class="grid-wide">
+        <div class="card"><h3>Screen</h3><div id="nzIdleText"></div></div>
+        <div class="card"><h3>Servo</h3><div id="nzIdleServo"></div></div>
+      </div>
+
+      <div class="card">
+        <h3>Events</h3>
+        <div id="nzLog">Nothing yet. Press Start Nazr.</div>
+      </div>
+    </section>
+
+    <!-- CONSOLE -->
+    <section id="tab-console">
+      <h2>Console</h2>
+      <p class="sub">Raw serial traffic. Commands are listed in the firmware's header comment.</p>
+      <div class="card">
+        <div class="row">
+          <input id="cmd" type="text" placeholder="e.g. FILL ff0000  or  TEXT wrap 0 ffffff 000000 20 Hi" style="flex:1; min-width:240px">
+          <button id="btnSend" class="b primary">Send</button>
+          <label class="muted"><input id="logNoise" type="checkbox"> Show touch / distance lines</label>
+          <button id="btnLogClear" class="b">Clear</button>
+        </div>
+        <div id="log"></div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script>
+// ===========================================================================
+// Serial connection
+// ===========================================================================
+const BAUD = 460800;
+const $ = id => document.getElementById(id);
+let port = null, writer = null, reader = null;
+let lineBuf = '';
+const waiters = [];
+const dev = { w: 480, h: 320, rot: 1 };
+let chain = Promise.resolve();
+
+if (!('serial' in navigator)) $('noSerial').style.display = 'block';
+
+function log(text, cls) {
+  const isNoise = /^(T |TU$|D |K$)/.test(text);
+  if (isNoise && !$('logNoise').checked) return;
+  const el = $('log');
+  const line = document.createElement('div');
+  if (cls) line.className = cls;
+  line.textContent = text;
+  el.appendChild(line);
+  while (el.childNodes.length > 600) el.removeChild(el.firstChild);
+  el.scrollTop = el.scrollHeight;
+}
+
+function setStatus(connected) {
+  $('status').textContent = connected ? 'Connected' : 'Not connected';
+  $('status').classList.toggle('on', connected);
+  $('btnConnect').disabled = connected;
+  $('btnDisconnect').disabled = !connected;
+  $('btnImg').disabled = !connected || !imgLoaded;
+}
+
+function waitFor(pred, timeout = 3000) {
+  return new Promise((resolve, reject) => {
+    const w = { pred, resolve };
+    waiters.push(w);
+    setTimeout(() => {
+      const i = waiters.indexOf(w);
+      if (i >= 0) { waiters.splice(i, 1); reject(new Error('timeout')); }
+    }, timeout);
+  });
+}
+
+function onLine(line) {
+  for (let i = 0; i < waiters.length; i++) {
+    if (waiters[i].pred(line)) { const w = waiters.splice(i, 1)[0]; w.resolve(line); break; }
+  }
+  if (line.startsWith('INFO ')) {
+    const [, w, h, r] = line.split(' ').map(Number);
+    dev.w = w; dev.h = h; dev.rot = r;
+    $('devinfo').textContent = `${w}×${h}, rotation ${r}`;
+    document.querySelectorAll('.rotSelect').forEach(s => s.value = String(r));
+    resizeTouchCanvas();
+    renderPreview();
+  } else if (line.startsWith('D ')) {
+    onDistance(parseFloat(line.slice(2)));
+  } else if (line.startsWith('T ')) {
+    const [, x, y] = line.split(' ').map(Number);
+    onTouch(x, y);
+  } else if (line === 'TU') {
+    onTouchUp();
+  }
+  log(line, line.startsWith('ERR') ? 'err' : '');
+}
+
+let keepReading = false;
+async function readLoop() {
+  const dec = new TextDecoder();
+  keepReading = true;
+  while (keepReading && port && port.readable) {
+    reader = port.readable.getReader();
+    try {
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        lineBuf += dec.decode(value, { stream: true });
+        let i;
+        while ((i = lineBuf.indexOf('\n')) >= 0) {
+          const line = lineBuf.slice(0, i).replace(/\r$/, '');
+          lineBuf = lineBuf.slice(i + 1);
+          if (line) onLine(line);
+        }
+      }
+    } catch (e) {
+      log('Read error: ' + e.message, 'err');
+      break;
+    } finally {
+      reader.releaseLock();
+    }
+  }
+}
+
+async function writeRaw(data) {
+  if (!writer) throw new Error('Not connected');
+  await writer.write(typeof data === 'string' ? new TextEncoder().encode(data) : data);
+}
+
+// Runs fn after any earlier command has finished, so replies don't get mixed up
+function exclusive(fn) {
+  const p = chain.then(fn, fn);
+  chain = p.catch(() => {});
+  return p;
+}
+
+// Sends one command and waits for a reply line starting with `expect`
+function send(cmd, expect = 'OK', timeout = 4000) {
+  return exclusive(async () => {
+    const reply = waitFor(l => l.startsWith(expect) || l.startsWith('ERR'), timeout);
+    log('> ' + cmd, 'tx');
+    await writeRaw(cmd + '\n');
+    const line = await reply;
+    if (line.startsWith('ERR')) throw new Error(line);
+    return line;
+  });
+}
+
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+$('btnConnect').onclick = async () => {
+  try {
+    port = await navigator.serial.requestPort();
+    await port.open({ baudRate: BAUD, bufferSize: 65536 });
+    try { await port.setSignals({ dataTerminalReady: false, requestToSend: false }); } catch {}
+    writer = port.writable.getWriter();
+    readLoop();
+    log('Port opened, waiting for the board...');
+    let ok = false;
+    for (let i = 0; i < 12 && !ok; i++) {
+      try { await send('PING', 'PONG', 500); ok = true; } catch { await sleep(250); }
+    }
+    if (!ok) throw new Error('The board did not answer. Is the CrowPanel35_Bridge sketch uploaded, and the Arduino Serial Monitor closed?');
+    setStatus(true);
+    await send('INFO', 'INFO');
+  } catch (e) {
+    log(e.message, 'err');
+    alert(e.message);
+    await disconnect();
+  }
+};
+
+async function disconnect() {
+  stopSweep(); stopRadar(); streaming = false; updateStreamBtn();
+  if (nazrOn) {
+    nazrOn = false; nzTrigServo.stop(); nzIdleServo.stop();
+    $('nzStart').textContent = 'Start Nazr'; setNazrBadge();
+  }
+  keepReading = false;
+  try { if (reader) await reader.cancel(); } catch {}
+  try { if (writer) { writer.releaseLock(); } } catch {}
+  try { if (port) await port.close(); } catch {}
+  port = writer = reader = null;
+  setStatus(false);
+}
+$('btnDisconnect').onclick = disconnect;
+
+// ===========================================================================
+// Tabs
+// ===========================================================================
+$('nav').addEventListener('click', e => {
+  const b = e.target.closest('button');
+  if (!b) return;
+  document.querySelectorAll('nav button').forEach(x => x.classList.toggle('active', x === b));
+  document.querySelectorAll('main section').forEach(s => s.classList.toggle('active', s.id === 'tab-' + b.dataset.tab));
+});
+
+function hex(c) { return c.replace('#', ''); }
+
+async function setRotation(r) {
+  if (Number(r) === dev.rot) return;
+  await send('ROT ' + r, 'INFO');
+}
+document.querySelectorAll('.rotSelect').forEach(s => s.addEventListener('change', async () => {
+  try {
+    await setRotation(s.value);
+    if (s.id === 'txtRot') sendText();
+    if (s.id === 'pgRot') sendPage();
+  } catch (e) { log(e.message, 'err'); }
+}));
+
+// ===========================================================================
+// Display
+// ===========================================================================
+const SWATCHES = ['#ff0000', '#00ff00', '#0000ff', '#ffffff', '#000000', '#ffff00', '#00ffff', '#ff00ff', '#fe019a', '#302cfb'];
+SWATCHES.forEach(c => {
+  const d = document.createElement('div');
+  d.className = 'swatch'; d.style.background = c; d.title = c;
+  d.onclick = () => { $('fillColor').value = c; send('FILL ' + hex(c)).catch(e => log(e.message, 'err')); };
+  $('swatches').appendChild(d);
+});
+$('btnFill').onclick = () => send('FILL ' + hex($('fillColor').value)).catch(e => log(e.message, 'err'));
+$('btnTestPat').onclick = () => send('TESTPAT').catch(e => log(e.message, 'err'));
+$('btnColorTest').onclick = async () => {
+  for (const c of ['ff0000', '00ff00', '0000ff', 'ffffff', '000000']) { await send('FILL ' + c); await sleep(700); }
+};
+
+let blTimer = null;
+$('bl').oninput = () => {
+  $('blVal').textContent = $('bl').value;
+  clearTimeout(blTimer);
+  blTimer = setTimeout(() => send('BL ' + $('bl').value).catch(() => {}), 40);
+};
+$('btnFade').onclick = async () => {
+  for (let b = 255; b >= 10; b -= 15) { await send('BL ' + b); }
+  for (let b = 10; b <= 255; b += 15) { await send('BL ' + b); }
+  await send('BL 255'); $('bl').value = 255; $('blVal').textContent = 255;
+};
+
+// ===========================================================================
+// Text
+// ===========================================================================
+async function sendText() {
+  const t = $('txt').value.replace(/\s+/g, ' ').trim();
+  if (!t || !writer) return;
+  try {
+    await setRotation($('txtRot').value);
+    const r = await send(`TEXT ${$('txtMode').value} ${$('txtFont').value} ${hex($('txtFg').value)} ${hex($('txtBg').value)} ${$('txtMargin').value} ${t}`, 'OK TEXT', 8000);
+    $('txtResult').textContent = r.replace('OK TEXT ', '').replace('size=', 'size ').replace('lines=', '· lines ');
+  } catch (e) { log(e.message, 'err'); }
+}
+let txtTimer = null;
+function textChanged() {
+  $('txtMarginVal').textContent = $('txtMargin').value;
+  if (!$('txtAuto').checked) return;
+  clearTimeout(txtTimer);
+  txtTimer = setTimeout(sendText, 450);
+}
+['txt', 'txtMode', 'txtFont', 'txtFg', 'txtBg', 'txtMargin'].forEach(id => $(id).addEventListener('input', textChanged));
+$('btnText').onclick = sendText;
+
+// ---- Page with parts -------------------------------------------------------
+const FONT_NAMES = ['Sans Bold', 'Sans', 'Serif Bold', 'Serif', 'Mono Bold', 'Orbitron', 'Satisfy (script)', 'Yellowtail (script)', 'Sora', 'Sora Bold', 'Poppins', 'Poppins Bold'];
+const ROLES = {
+  Title:      { font: 0, px: 56, align: 'c', space: 0 },
+  Heading:    { font: 0, px: 34, align: 'l', space: 18 },
+  Subheading: { font: 1, px: 26, align: 'l', space: 10 },
+  Body:       { font: 1, px: 20, align: 'l', space: 12 },
+  Caption:    { font: 1, px: 15, align: 'l', space: 8 },
+  Footer:     { font: 1, px: 14, align: 'r', space: 18 },
+};
+
+function makePart(role, text) {
+  const r = ROLES[role];
+  return { role, text, font: r.font, px: r.px, fg: '#000000', align: r.align, space: r.space };
+}
+function examplePage() {
+  return [
+    makePart('Title', 'NAZR'),
+    makePart('Heading', 'CrowPanel 3.5" display'),
+    makePart('Body', 'This page has a title, a heading and body text. Each part has its own font, size, color and alignment.'),
+    makePart('Footer', 'PiF lab test'),
+  ];
+}
+
+let parts;
+try { parts = JSON.parse(localStorage.getItem('crowpanel.parts')) || examplePage(); } catch { parts = examplePage(); }
+function saveParts() { try { localStorage.setItem('crowpanel.parts', JSON.stringify(parts)); } catch {} }
+
+function el(tag, props = {}, ...children) {
+  const e = document.createElement(tag);
+  Object.assign(e, props);
+  children.forEach(c => e.append(c));
+  return e;
+}
+function opt(value, label, selected) { return el('option', { value, textContent: label, selected }); }
+
+function renderParts() {
+  const list = $('partsList');
+  list.innerHTML = '';
+  parts.forEach((p, i) => {
+    const role = el('select', {}, ...Object.keys(ROLES).map(r => opt(r, r, r === p.role)));
+    role.onchange = () => { Object.assign(p, makePart(role.value, p.text), { fg: p.fg }); renderParts(); pageChanged(); };
+
+    const up = el('button', { className: 'iconbtn', textContent: '↑', title: 'Move up', disabled: i === 0 });
+    const down = el('button', { className: 'iconbtn', textContent: '↓', title: 'Move down', disabled: i === parts.length - 1 });
+    const del = el('button', { className: 'iconbtn', textContent: '✕', title: 'Remove' });
+    up.onclick = () => { [parts[i - 1], parts[i]] = [parts[i], parts[i - 1]]; renderParts(); pageChanged(); };
+    down.onclick = () => { [parts[i + 1], parts[i]] = [parts[i], parts[i + 1]]; renderParts(); pageChanged(); };
+    del.onclick = () => { parts.splice(i, 1); renderParts(); pageChanged(); };
+
+    const text = el('textarea', { value: p.text, placeholder: p.role + ' text (Enter = new line)' });
+    text.oninput = () => { p.text = text.value; pageChanged(); };
+
+    const font = el('select', {}, ...FONT_NAMES.map((n, k) => opt(k, n, k === p.font)));
+    font.onchange = () => { p.font = Number(font.value); pageChanged(); };
+
+    const size = el('input', { type: 'range', min: 8, max: 160, value: p.px, style: 'width:150px' });
+    const sizeNum = el('input', { type: 'number', min: 8, max: 160, value: p.px, className: 'sizeval' });
+    size.oninput = () => { p.px = Number(size.value); sizeNum.value = p.px; pageChanged(); };
+    sizeNum.oninput = () => { p.px = Math.max(8, Math.min(300, Number(sizeNum.value) || 8)); size.value = p.px; pageChanged(); };
+
+    const color = el('input', { type: 'color', value: p.fg });
+    color.oninput = () => { p.fg = color.value; pageChanged(); };
+
+    const align = el('select', {}, opt('l', 'Left', p.align === 'l'), opt('c', 'Center', p.align === 'c'), opt('r', 'Right', p.align === 'r'));
+    align.onchange = () => { p.align = align.value; pageChanged(); };
+
+    const space = el('input', { type: 'number', min: 0, max: 200, value: p.space, style: 'width:70px', disabled: i === 0 });
+    space.oninput = () => { p.space = Math.max(0, Number(space.value) || 0); pageChanged(); };
+
+    const f = (label, ...c) => el('label', { className: 'f' }, label, ...c);
+    list.append(el('div', { className: 'card part' },
+      el('div', { className: 'head' }, role, el('span', { className: 'muted', textContent: `part ${i + 1}` }),
+        el('div', { className: 'spacer' }), up, down, del),
+      text,
+      el('div', { className: 'row', style: 'margin-top:10px' },
+        f('Font', font),
+        f('Size (px)', el('span', {}, size, ' ', sizeNum)),
+        f('Color', color),
+        f('Align', align),
+        f('Space above (px)', space))));
+  });
+  saveParts();
+}
+
+Object.keys(ROLES).forEach(r => {
+  const b = el('button', { className: 'b', textContent: '+ ' + r });
+  b.onclick = () => { parts.push(makePart(r, r === 'Body' ? 'Body text goes here.' : r)); renderParts(); pageChanged(); };
+  $('addPartBtns').append(b);
+});
+$('btnPageReset').onclick = () => { parts = examplePage(); renderParts(); pageChanged(); };
+
+let pageBusy = false, pagePending = false, pageTimer = null;
+async function sendPage() {
+  if (!writer) return;
+  if (pageBusy) { pagePending = true; return; }
+  pageBusy = true;
+  try {
+    await setRotation($('pgRot').value);
+    await send(`PBEGIN ${hex($('pgBg').value)} ${$('pgMargin').value} ${$('pgValign').value} ${$('pgFit').checked ? 1 : 0}`);
+    for (const p of parts) {
+      const t = p.text.replace(/\r/g, '').split('\n').map(s => s.trim()).join('\\n') || ' ';
+      await send(`PART ${p.font} ${p.px} ${hex(p.fg)} ${p.align} ${p.space} ${t}`);
+    }
+    const r = await send('PEND', 'OK PAGE', 10000);
+    const scale = parseFloat((r.match(/scale=([\d.]+)/) || [])[1] || '1');
+    $('pgResult').textContent = scale < 0.995
+      ? `Too long for the screen: shrunk to ${Math.round(scale * 100)}%`
+      : 'Fits on screen';
+  } catch (e) {
+    log('Page failed: ' + e.message, 'err');
+    $('pgResult').textContent = 'Error: ' + e.message + ' (see the Console tab)';
+  }
+  pageBusy = false;
+  if (pagePending) { pagePending = false; sendPage(); }
+}
+function pageChanged() {
+  saveParts();
+  $('pgMarginVal').textContent = $('pgMargin').value;
+  if (!$('pgAuto').checked) return;
+  clearTimeout(pageTimer);
+  pageTimer = setTimeout(sendPage, 450);
+}
+['pgBg', 'pgMargin', 'pgValign', 'pgFit'].forEach(id => $(id).addEventListener('input', pageChanged));
+$('btnPage').onclick = sendPage;
+
+function setTextMode(page) {
+  $('pagePane').style.display = page ? '' : 'none';
+  $('quickPane').style.display = page ? 'none' : '';
+  $('modePage').classList.toggle('primary', page);
+  $('modeQuick').classList.toggle('primary', !page);
+}
+$('modePage').onclick = () => { setTextMode(true); sendPage(); };
+$('modeQuick').onclick = () => { setTextMode(false); sendText(); };
+// Show the page right away when the Text tab is opened in page mode
+document.querySelector('nav button[data-tab="text"]').addEventListener('click', () => {
+  if ($('pagePane').style.display !== 'none') sendPage();
+});
+renderParts();
+
+// ===========================================================================
+// Image
+// ===========================================================================
+let imgLoaded = null;
+function screenSize(rot) { return (Number(rot) % 2 === 1) ? [480, 320] : [320, 480]; }
+
+function renderPreview() {
+  const [W, H] = screenSize($('imgRot').value);
+  const c = $('imgPreview');
+  c.width = W; c.height = H;
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = $('imgBg').value;
+  ctx.fillRect(0, 0, W, H);
+  if (!imgLoaded) return;
+  const iw = imgLoaded.naturalWidth || imgLoaded.width, ih = imgLoaded.naturalHeight || imgLoaded.height;
+  const fit = $('imgFit').value;
+  let dw, dh;
+  if (fit === 'stretch') { dw = W; dh = H; }
+  else {
+    const s = fit === 'cover' ? Math.max(W / iw, H / ih) : Math.min(W / iw, H / ih);
+    dw = iw * s; dh = ih * s;
+  }
+  ctx.imageSmoothingQuality = 'high';
+  ctx.drawImage(imgLoaded, (W - dw) / 2, (H - dh) / 2, dw, dh);
+  $('imgInfo').textContent = `${iw}×${ih} → ${W}×${H}`;
+}
+
+function loadImageFile(file) {
+  if (!file) return;
+  const img = new Image();
+  img.onload = () => { imgLoaded = img; renderPreview(); setStatus(!!writer); };
+  img.src = URL.createObjectURL(file);
+}
+$('imgFile').onchange = e => loadImageFile(e.target.files[0]);
+['imgFit', 'imgBg', 'imgRot'].forEach(id => $(id).addEventListener('input', renderPreview));
+const pv = $('imgPreview');
+pv.addEventListener('dragover', e => e.preventDefault());
+pv.addEventListener('drop', e => { e.preventDefault(); loadImageFile(e.dataTransfer.files[0]); });
+
+$('btnImg').onclick = async () => {
+  $('btnImg').disabled = true;
+  try {
+    await setRotation($('imgRot').value);
+    renderPreview();
+    const c = $('imgPreview');
+    const W = c.width, H = c.height;
+    const px = c.getContext('2d').getImageData(0, 0, W, H).data;
+    const out = new Uint8Array(W * H * 2);
+    for (let i = 0, j = 0; i < px.length; i += 4, j += 2) {
+      const v = ((px[i] & 0xF8) << 8) | ((px[i + 1] & 0xFC) << 3) | (px[i + 2] >> 3);
+      out[j] = v >> 8; out[j + 1] = v & 0xFF;          // big-endian RGB565
+    }
+    const t0 = performance.now();
+    await exclusive(async () => {
+      const ready = waitFor(l => l === 'READY' || l.startsWith('ERR'), 3000);
+      log(`> IMG 0 0 ${W} ${H}`, 'tx');
+      await writeRaw(`IMG 0 0 ${W} ${H}\n`);
+      if ((await ready) !== 'READY') throw new Error('Board refused the image');
+      const CH = 4096;
+      for (let off = 0; off < out.length; off += CH) {
+        const last = off + CH >= out.length;
+        const ack = waitFor(l => l === 'K' || l.startsWith('ERR'), 4000);
+        const done = last ? waitFor(l => l === 'OK IMG' || l.startsWith('ERR'), 5000) : null;
+        await writeRaw(out.subarray(off, off + CH));
+        if ((await ack) !== 'K') throw new Error('Transfer error');
+        if (done) await done;
+        $('imgProg').style.width = (100 * Math.min(1, (off + CH) / out.length)).toFixed(1) + '%';
+      }
+    });
+    $('imgInfo').textContent = `Sent in ${((performance.now() - t0) / 1000).toFixed(1)} s`;
+  } catch (e) {
+    log(e.message, 'err'); alert('Image failed: ' + e.message);
+  } finally {
+    $('btnImg').disabled = !writer || !imgLoaded;
+    setTimeout(() => $('imgProg').style.width = '0', 1500);
+  }
+};
+
+// ===========================================================================
+// Servo
+// ===========================================================================
+let servoTarget = 90, servoSent = 90, servoBusy = false;
+function setServoUI(a) { $('servo').value = a; $('servoVal').textContent = a; }
+async function pumpServo() {
+  if (servoBusy || servoTarget === servoSent || !writer) return;
+  servoBusy = true;
+  const a = servoTarget;
+  try { await send('SERVO ' + a); servoSent = a; } catch {}
+  servoBusy = false;
+}
+setInterval(pumpServo, 30);
+$('servo').oninput = () => { stopSweep(); servoTarget = Number($('servo').value); $('servoVal').textContent = servoTarget; };
+document.querySelectorAll('.servoJump').forEach(b => b.onclick = () => { stopSweep(); servoTarget = Number(b.dataset.a); setServoUI(servoTarget); });
+
+// Sweep limits from the From/To boxes, clamped to 0-180 and put in order
+function sweepRange() {
+  const clamp = v => Math.max(0, Math.min(180, Math.round(Number(v) || 0)));
+  const a = clamp($('sweepFrom').value), b = clamp($('sweepTo').value);
+  return a <= b ? [a, b] : [b, a];
+}
+function updateSweepInfo() {
+  const [lo, hi] = sweepRange();
+  $('sweepInfo').textContent = lo === hi ? `Holds at ${lo}°` : `Sweeps ${lo}° ↔ ${hi}°`;
+}
+['sweepFrom', 'sweepTo'].forEach(id => $(id).addEventListener('input', updateSweepInfo));
+
+let sweeping = false;
+function stopSweep() { sweeping = false; $('btnSweep').textContent = 'Start sweep'; }
+$('btnSweep').onclick = async () => {
+  if (sweeping) return stopSweep();
+  sweeping = true; $('btnSweep').textContent = 'Stop sweep';
+  let a = Number($('servo').value), dir = 1;
+  let [lo, hi] = sweepRange();
+  if (a < lo || a > hi) a = lo;                  // start inside the chosen range
+  while (sweeping && writer) {
+    [lo, hi] = sweepRange();                     // range can be changed while sweeping
+    a += dir * Number($('sweepStep').value);
+    if (a >= hi) { a = hi; dir = -1; }
+    if (a <= lo) { a = lo; dir = 1; }
+    setServoUI(a);
+    try { await send('SERVO ' + a); servoSent = servoTarget = a; } catch { break; }
+    await sleep(Number($('sweepMs').value));
+  }
+  stopSweep();
+};
+$('btnServoCfg').onclick = () => send(`SERVOCFG ${$('sMin').value} ${$('sMax').value}`).then(() => { servoSent = -1; }).catch(e => log(e.message, 'err'));
+
+// ===========================================================================
+// Ultrasonic
+// ===========================================================================
+let streaming = false;
+const samples = [];   // {t, cm}
+function updateStreamBtn() { $('btnStream').textContent = streaming ? 'Stop live readings' : 'Start live readings'; }
+$('btnStream').onclick = async () => {
+  streaming = !streaming;
+  updateStreamBtn();
+  try { await send('STREAM ' + (streaming ? $('streamMs').value : 0)); } catch (e) { log(e.message, 'err'); }
+};
+$('streamMs').onchange = () => { if (streaming) send('STREAM ' + $('streamMs').value).catch(() => {}); };
+$('btnDistOnce').onclick = () => send('DIST', 'D ').catch(e => log(e.message, 'err'));
+$('btnClearGraph').onclick = () => { samples.length = 0; drawGraph(); };
+$('gWin').onchange = () => drawGraph();
+
+function onDistance(cm) {
+  nazrOnDistance(cm);
+  $('distVal').textContent = cm > 0 ? cm.toFixed(1) : '--';
+  samples.push({ t: Date.now(), cm });
+  const cutoff = Date.now() - 60 * 60 * 1000;
+  while (samples.length && samples[0].t < cutoff) samples.shift();
+  drawGraph();
+}
+
+function drawGraph() {
+  const c = $('graph'), ctx = c.getContext('2d');
+  const W = c.width, H = c.height, L = 50, B = 30, T = 12, Rp = 12;
+  const win = Number($('gWin').value) * 60 * 1000, now = Date.now();
+  const pts = samples.filter(s => s.t >= now - win);
+  const valid = pts.filter(s => s.cm > 0).map(s => s.cm);
+
+  if (valid.length) {
+    $('dMin').textContent = Math.min(...valid).toFixed(1);
+    $('dMax').textContent = Math.max(...valid).toFixed(1);
+    $('dAvg').textContent = (valid.reduce((a, b) => a + b, 0) / valid.length).toFixed(1);
+  } else ['dMin', 'dMax', 'dAvg'].forEach(id => $(id).textContent = '--');
+
+  const top = Math.min(400, Math.max(50, Math.ceil((Math.max(0, ...valid) + 1) / 50) * 50));
+  ctx.fillStyle = '#0b0b10'; ctx.fillRect(0, 0, W, H);
+  ctx.font = '12px system-ui'; ctx.fillStyle = '#8a8798'; ctx.strokeStyle = '#26232f'; ctx.lineWidth = 1;
+  for (let i = 0; i <= 4; i++) {
+    const y = T + (H - T - B) * (1 - i / 4);
+    ctx.beginPath(); ctx.moveTo(L, y); ctx.lineTo(W - Rp, y); ctx.stroke();
+    ctx.textAlign = 'right'; ctx.textBaseline = 'middle'; ctx.fillText(Math.round(top * i / 4), L - 6, y);
+  }
+  const mins = Number($('gWin').value);
+  for (let i = 0; i <= 4; i++) {
+    const x = L + (W - L - Rp) * i / 4;
+    ctx.beginPath(); ctx.moveTo(x, T); ctx.lineTo(x, H - B); ctx.stroke();
+    ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    const ago = mins * (1 - i / 4);
+    ctx.fillText(i === 4 ? 'now' : `-${ago % 1 ? ago.toFixed(2) : ago} min`, x, H - B + 8);
+  }
+  ctx.strokeStyle = '#4de3ff'; ctx.lineWidth = 2; ctx.beginPath();
+  let pen = false;
+  for (const s of pts) {
+    if (s.cm <= 0) { pen = false; continue; }
+    const x = L + (W - L - Rp) * (1 - (now - s.t) / win);
+    const y = T + (H - T - B) * (1 - Math.min(s.cm, top) / top);
+    if (pen) ctx.lineTo(x, y); else ctx.moveTo(x, y);
+    pen = true;
+  }
+  ctx.stroke();
+}
+drawGraph();
+
+// ===========================================================================
+// Radar
+// ===========================================================================
+let radarOn = false;
+const radar = new Array(181).fill(null);
+let radarAngle = 0;
+function stopRadar() { radarOn = false; $('btnRadar').textContent = 'Start radar'; }
+
+$('btnRadar').onclick = async () => {
+  if (radarOn) return stopRadar();
+  if (!writer) return alert('Connect the board first.');
+  radarOn = true; $('btnRadar').textContent = 'Stop radar';
+  let a = 0, dir = 1;
+  while (radarOn && writer) {
+    const step = Number($('rStep').value);
+    try {
+      const r = await send(`SD ${a} ${$('rSettle').value}`, 'SD ', 3000);
+      const [, ang, cm] = r.split(' ');
+      radar[Number(ang)] = parseFloat(cm);
+      radarAngle = Number(ang);
+      $('rInfo').textContent = `${ang}° · ${parseFloat(cm) > 0 ? parseFloat(cm).toFixed(1) + ' cm' : 'no echo'}`;
+      drawRadar();
+    } catch (e) { log(e.message, 'err'); break; }
+    a += dir * step;
+    if (a >= 180) { a = 180; dir = -1; }
+    if (a <= 0) { a = 0; dir = 1; }
+  }
+  stopRadar();
+};
+$('rRange').onchange = () => { radar.fill(null); drawRadar(); };
+
+function drawRadar() {
+  const c = $('radar'), ctx = c.getContext('2d');
+  const W = c.width, H = c.height, CX = W / 2, CY = H - 30, R = Math.min(CX - 30, CY - 20);
+  const range = Number($('rRange').value);
+  const P = (deg, r) => [CX + r * Math.cos(deg * Math.PI / 180), CY - r * Math.sin(deg * Math.PI / 180)];
+  ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, H);
+
+  const step = Number($('rStep').value);
+  for (let a = 0; a <= 180; a++) {
+    const cm = radar[a];
+    if (cm === null) continue;
+    const a0 = (a - step / 2 - 0.3) * Math.PI / 180, a1 = (a + step / 2 + 0.3) * Math.PI / 180;
+    const rObj = cm > 0 && cm <= range ? R * cm / range : R;
+    ctx.fillStyle = '#063d16';
+    ctx.beginPath(); ctx.moveTo(CX, CY); ctx.arc(CX, CY, rObj, -a1, -a0); ctx.closePath(); ctx.fill();
+    if (cm > 0 && cm <= range) {
+      ctx.fillStyle = '#5a0b0b';
+      ctx.beginPath(); ctx.arc(CX, CY, R, -a1, -a0); ctx.arc(CX, CY, rObj, -a0, -a1, true); ctx.closePath(); ctx.fill();
+      const [x, y] = P(a, rObj);
+      ctx.fillStyle = '#ff3b3b'; ctx.beginPath(); ctx.arc(x, y, 3.5, 0, Math.PI * 2); ctx.fill();
+    }
+  }
+  ctx.strokeStyle = '#1f8a3a'; ctx.lineWidth = 1; ctx.fillStyle = '#3fd46b'; ctx.font = '12px system-ui';
+  for (let i = 1; i <= 4; i++) {
+    ctx.beginPath(); ctx.arc(CX, CY, R * i / 4, Math.PI, 2 * Math.PI); ctx.stroke();
+    ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    ctx.fillText(range * i / 4, CX + R * i / 4, CY + 6);
+    ctx.fillText(range * i / 4, CX - R * i / 4, CY + 6);
+  }
+  for (let s = 30; s < 180; s += 30) {
+    const [x, y] = P(s, R); ctx.beginPath(); ctx.moveTo(CX, CY); ctx.lineTo(x, y); ctx.stroke();
+    const [lx, ly] = P(s, R + 14); ctx.textBaseline = 'middle'; ctx.fillText(s + '°', lx, ly);
+  }
+  ctx.beginPath(); ctx.moveTo(CX - R - 6, CY); ctx.lineTo(CX + R + 6, CY); ctx.stroke();
+  const [sx, sy] = P(radarAngle, R);
+  ctx.strokeStyle = '#7dff9b'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(CX, CY); ctx.lineTo(sx, sy); ctx.stroke();
+}
+drawRadar();
+
+// ===========================================================================
+// Touch
+// ===========================================================================
+let lastTouch = null;
+function resizeTouchCanvas() {
+  const c = $('touchCanvas');
+  if (c.width !== dev.w || c.height !== dev.h) { c.width = dev.w; c.height = dev.h; clearTouch(); }
+}
+function clearTouch() {
+  const ctx = $('touchCanvas').getContext('2d');
+  ctx.fillStyle = '#111'; ctx.fillRect(0, 0, dev.w, dev.h);
+}
+function onTouch(x, y) {
+  const ctx = $('touchCanvas').getContext('2d');
+  ctx.strokeStyle = ctx.fillStyle = $('paintColor').value;
+  ctx.lineWidth = 6; ctx.lineCap = 'round';
+  if (lastTouch) { ctx.beginPath(); ctx.moveTo(lastTouch[0], lastTouch[1]); ctx.lineTo(x, y); ctx.stroke(); }
+  else { ctx.beginPath(); ctx.arc(x, y, 3, 0, Math.PI * 2); ctx.fill(); }
+  lastTouch = [x, y];
+  $('touchXY').textContent = `x ${x}, y ${y}`;
+}
+function onTouchUp() { lastTouch = null; }
+$('btnTouchClear').onclick = clearTouch;
+$('paintOn').onchange = $('paintColor').oninput = () =>
+  send(`PAINT ${$('paintOn').checked ? 1 : 0} ${hex($('paintColor').value)}`).catch(() => {});
+$('btnCal').onclick = async () => {
+  try { await send('CAL', 'CALDONE', 120000); alert('Touch calibration saved.'); }
+  catch (e) { log(e.message, 'err'); }
+};
+clearTouch();
+
+// ===========================================================================
+// Nazr: ultrasonic triggers text + servo
+// ===========================================================================
+function sel(options, value) {
+  return el('select', {}, ...options.map(([v, label]) => opt(v, label, String(v) === String(value))));
+}
+function field(label, ...c) { return el('label', { className: 'f' }, label, ...c); }
+function loadJSON(key, fallback) {
+  try { const v = JSON.parse(localStorage.getItem(key)); if (v) return v; } catch {}
+  return JSON.parse(JSON.stringify(fallback));
+}
+function saveJSON(key, v) { try { localStorage.setItem(key, JSON.stringify(v)); } catch {} }
+const ROT_OPTS = [['0', 'Portrait'], ['1', 'Landscape'], ['2', 'Portrait, flipped'], ['3', 'Landscape, flipped']];
+
+// Quick big text setup (same controls as the Text tab's "Quick big text")
+function createTextComposer(root, key, defaults) {
+  const st = loadJSON(key, defaults);
+  if (st.mode !== 'none') st.mode = 'quick';          // older saved setups may say 'page'
+  if (!st.quick) st.quick = JSON.parse(JSON.stringify(defaults.quick));
+  const save = () => saveJSON(key, st);
+
+  function render() {
+    root.innerHTML = '';
+    const mode = sel([['quick', 'Big text'], ['none', 'Leave the screen as it is']], st.mode);
+    mode.onchange = () => { st.mode = mode.value; save(); render(); };
+    const copy = el('button', { className: 'b', textContent: 'Copy from Text tab' });
+    copy.onclick = copyFromTextTab;
+    const test = el('button', { className: 'b', textContent: 'Preview on screen' });
+    test.onclick = () => show().catch(e => log(e.message, 'err'));
+    root.append(el('div', { className: 'row' }, field('Show', mode), copy, test));
+    if (st.mode === 'quick') renderQuick();
+  }
+
+  function renderQuick() {
+    const q = st.quick;
+    const text = el('textarea', { value: q.text }); text.oninput = () => { q.text = text.value; save(); };
+    const layout = sel([['wrap', 'Wrapped lines'], ['words', 'One word per line'], ['letters', 'Vertical letters']], q.layout);
+    layout.onchange = () => { q.layout = layout.value; save(); };
+    const rot = sel(ROT_OPTS, q.rot); rot.onchange = () => { q.rot = rot.value; save(); };
+    const font = sel(FONT_NAMES.map((n, k) => [k, n]), q.font); font.onchange = () => { q.font = Number(font.value); save(); };
+    const fg = el('input', { type: 'color', value: q.fg }); fg.oninput = () => { q.fg = fg.value; save(); };
+    const bg = el('input', { type: 'color', value: q.bg }); bg.oninput = () => { q.bg = bg.value; save(); };
+    const margin = el('input', { type: 'range', min: 0, max: 80, value: q.margin, style: 'width:120px' });
+    const marginVal = el('span', { className: 'muted', textContent: q.margin + 'px' });
+    margin.oninput = () => { q.margin = Number(margin.value) || 0; marginVal.textContent = q.margin + 'px'; save(); };
+    root.append(text, el('div', { className: 'row', style: 'margin-top:10px' },
+      field('Layout', layout), field('Orientation', rot), field('Font', font),
+      field('Text', fg), field('Background', bg), field('Margin', el('span', {}, margin, ' ', marginVal))));
+  }
+
+  function copyFromTextTab() {
+    st.mode = 'quick';
+    st.quick = { text: $('txt').value, layout: $('txtMode').value, rot: $('txtRot').value, font: Number($('txtFont').value),
+                 fg: $('txtFg').value, bg: $('txtBg').value, margin: Number($('txtMargin').value) };
+    save(); render();
+  }
+
+  // Draws this text on the board's screen (largest size that fits)
+  async function show() {
+    if (st.mode === 'none' || !writer) return;
+    const q = st.quick;
+    const t = q.text.replace(/\s+/g, ' ').trim();
+    if (!t) return;
+    await setRotation(q.rot);
+    await send(`TEXT ${q.layout} ${q.font} ${hex(q.fg)} ${hex(q.bg)} ${q.margin} ${t}`, 'OK TEXT', 8000);
+  }
+
+  render();
+  return { show };
+}
+
+// The Servo tab's controls as an action: go to an angle, sweep a range, or do nothing
+function createServoAction(root, key, defaults) {
+  const st = loadJSON(key, defaults);
+  const save = () => saveJSON(key, st);
+  let runId = 0;
+
+  function render() {
+    root.innerHTML = '';
+    const type = sel([['angle', 'Go to an angle'], ['sweep', 'Sweep back and forth'], ['random', 'Random angles'],
+                      ['none', 'Do nothing (stay where it is)']], st.type);
+    type.onchange = () => { st.type = type.value; save(); render(); };
+    root.append(el('div', { className: 'row' }, field('Servo', type)));
+
+    if (st.type === 'angle') {
+      const val = el('span', { className: 'muted', textContent: st.angle + '°' });
+      const a = el('input', { type: 'range', min: 0, max: 180, value: st.angle, style: 'width:100%' });
+      a.oninput = () => { st.angle = Number(a.value); val.textContent = st.angle + '°'; save(); };
+      const btns = el('div', { className: 'row' });
+      [0, 45, 90, 135, 180].forEach(v => {
+        const b = el('button', { className: 'b', textContent: v + '°' });
+        b.onclick = () => { st.angle = v; a.value = v; val.textContent = v + '°'; save(); };
+        btns.append(b);
+      });
+      root.append(el('div', { className: 'row' }, field('Angle', a), val), btns);
+    }
+    const num = (k, min, max, width = 80, stepBy = 1) => {
+      const i = el('input', { type: 'number', min, max, step: stepBy, value: st[k], style: `width:${width}px` });
+      i.oninput = () => { st[k] = Number(i.value) || 0; save(); };
+      return i;
+    };
+    if (st.type === 'random') {
+      if (st.hold === undefined) st.hold = 800;
+      if (st.minChange === undefined) st.minChange = 20;
+      root.append(el('div', { className: 'row' },
+        field('From (°)', num('from', 0, 180)), field('To (°)', num('to', 0, 180)),
+        field('Hold each angle (ms)', num('hold', 100, 60000, 110, 100)),
+        field('Move at least (°)', num('minChange', 0, 180))));
+      root.append(el('p', { className: 'muted', style: 'margin:0 0 8px',
+        textContent: 'Picks a random angle in the range, holds it, then picks another.' }));
+    }
+    if (st.type === 'sweep') {
+      const step = sel([[1, '1'], [2, '2'], [5, '5'], [10, '10']], st.step);
+      step.onchange = () => { st.step = Number(step.value); save(); };
+      const speed = el('input', { type: 'range', min: 5, max: 60, value: st.speed, style: 'width:120px' });
+      speed.oninput = () => { st.speed = Number(speed.value); save(); };
+      root.append(el('div', { className: 'row' },
+        field('From (°)', num('from', 0, 180)), field('To (°)', num('to', 0, 180)),
+        field('Step (°)', step), field('Speed', speed)));
+    }
+    const test = el('button', { className: 'b', textContent: 'Test' });
+    const stopB = el('button', { className: 'b', textContent: 'Stop' });
+    test.onclick = () => start();
+    stopB.onclick = () => stop();
+    root.append(el('div', { className: 'row' }, test, stopB));
+  }
+
+  function stop() { runId++; }
+
+  async function start() {
+    stop();
+    const id = runId;
+    stopSweep();
+    if (!writer || st.type === 'none') return;
+    if (st.type === 'angle') {
+      await send('SERVO ' + st.angle).catch(() => {});
+      servoSent = servoTarget = st.angle; setServoUI(st.angle);
+      return;
+    }
+    const clamp = v => Math.max(0, Math.min(180, Math.round(Number(v) || 0)));
+    const lo = Math.min(clamp(st.from), clamp(st.to)), hi = Math.max(clamp(st.from), clamp(st.to));
+
+    if (st.type === 'random') {
+      let prev = -999;
+      while (id === runId && writer) {
+        // Pick a new angle, trying to move at least "minChange" degrees from the last one
+        const minChange = Math.min(Math.max(0, Number(st.minChange) || 0), hi - lo);
+        let a = lo, tries = 0;
+        do { a = lo + Math.floor(Math.random() * (hi - lo + 1)); }
+        while (Math.abs(a - prev) < Math.max(minChange, hi > lo ? 1 : 0) && ++tries < 50);
+        prev = a;
+        try { await send('SERVO ' + a); } catch { break; }
+        servoSent = servoTarget = a; setServoUI(a);
+        // Hold, in small steps so Stop reacts quickly
+        const until = Date.now() + Math.max(100, Number(st.hold) || 800);
+        while (id === runId && Date.now() < until) await sleep(40);
+      }
+      return;
+    }
+
+    let a = lo, dir = 1;
+    while (id === runId && writer) {
+      try { await send('SERVO ' + a); } catch { break; }
+      servoSent = servoTarget = a; setServoUI(a);
+      await sleep(st.speed);
+      a += dir * st.step;
+      if (a >= hi) { a = hi; dir = -1; }
+      if (a <= lo) { a = lo; dir = 1; }
+    }
+  }
+
+  render();
+  return { start, stop };
+}
+
+// ---- Default setups -----------------------------------------------------
+const nzTrigText = createTextComposer($('nzTrigText'), 'crowpanel.nazr.trigText', {
+  mode: 'quick',
+  quick: { text: 'NAZR', layout: 'wrap', rot: '1', font: 9, fg: '#000000', bg: '#fe019a', margin: 24 },
+});
+const nzIdleText = createTextComposer($('nzIdleText'), 'crowpanel.nazr.idleText', {
+  mode: 'quick',
+  quick: { text: 'Come closer', layout: 'wrap', rot: '1', font: 9, fg: '#ffffff', bg: '#302cfb', margin: 32 },
+});
+const nzTrigServo = createServoAction($('nzTrigServo'), 'crowpanel.nazr.trigServo',
+  { type: 'sweep', angle: 90, from: 45, to: 135, step: 5, speed: 15 });
+const nzIdleServo = createServoAction($('nzIdleServo'), 'crowpanel.nazr.idleServo',
+  { type: 'angle', angle: 90, from: 0, to: 180, step: 2, speed: 15 });
+
+// ---- Trigger settings -----------------------------------------------------
+const NZ_FIELDS = ['nzMin', 'nzMax', 'nzInterval', 'nzConfirm', 'nzRelease'];
+(function loadNazrSettings() {
+  const s = loadJSON('crowpanel.nazr.trigger', {});
+  NZ_FIELDS.forEach(id => { if (s[id] !== undefined) $(id).value = s[id]; });
+})();
+function nzRange() {
+  const a = Number($('nzMin').value) || 0, b = Number($('nzMax').value) || 0;
+  return a <= b ? [a, b] : [b, a];
+}
+function drawRangeBar(cm) {
+  const [lo, hi] = nzRange();
+  const scale = Math.min(400, Math.max(100, Math.ceil(hi * 1.5 / 50) * 50));
+  $('nzScaleMax').textContent = scale + ' cm';
+  $('nzBand').style.left = (100 * Math.min(lo, scale) / scale) + '%';
+  $('nzBand').style.width = (100 * (Math.min(hi, scale) - Math.min(lo, scale)) / scale) + '%';
+  const m = $('nzMarker');
+  if (cm === undefined) return;
+  m.style.display = cm > 0 ? 'block' : 'none';
+  if (cm > 0) m.style.left = (100 * Math.min(cm, scale) / scale) + '%';
+}
+NZ_FIELDS.forEach(id => $(id).addEventListener('input', () => {
+  const s = {}; NZ_FIELDS.forEach(f => s[f] = $(f).value);
+  saveJSON('crowpanel.nazr.trigger', s);
+  drawRangeBar();
+  if (id === 'nzInterval' && nazrOn) send('STREAM ' + $('nzInterval').value).catch(() => {});
+}));
+drawRangeBar();
+
+// ---- Engine -----------------------------------------------------------------
+let nazrOn = false, nazrState = 'idle', nzInCount = 0, nzLastIn = 0, nzTriggers = 0;
+let nzQueue = Promise.resolve();
+
+function nzEvent(text) {
+  const box = $('nzLog');
+  if (box.dataset.started !== '1') { box.textContent = ''; box.dataset.started = '1'; }
+  box.prepend(el('div', { textContent: `${new Date().toLocaleTimeString()}  ${text}` }));
+  while (box.childNodes.length > 100) box.removeChild(box.lastChild);
+}
+
+function setNazrBadge() {
+  const b = $('nzState');
+  b.className = 'pill' + (!nazrOn ? '' : nazrState === 'triggered' ? ' trig' : ' idle');
+  b.textContent = !nazrOn ? 'Stopped' : nazrState === 'triggered' ? 'Object in range' : 'Waiting';
+}
+
+// Runs the screen + servo actions for a state, one transition at a time
+function enterState(s, cm) {
+  nazrState = s;
+  setNazrBadge();
+  if (s === 'triggered') {
+    nzTriggers++;
+    $('nzCount').textContent = `${nzTriggers} trigger${nzTriggers === 1 ? '' : 's'}`;
+    nzEvent(`Triggered at ${cm.toFixed(1)} cm`);
+  } else {
+    nzEvent(cm > 0 ? `Object left the range (${cm.toFixed(1)} cm), back to idle` : 'Idle, waiting for an object');
+  }
+  nzQueue = nzQueue.then(async () => {
+    nzTrigServo.stop(); nzIdleServo.stop();
+    if (!nazrOn) return;
+    if (s === 'triggered') { await nzTrigText.show(); nzTrigServo.start(); }
+    else { await nzIdleText.show(); nzIdleServo.start(); }
+  }).catch(e => log('Nazr: ' + e.message, 'err'));
+}
+
+function nazrOnDistance(cm) {
+  if (!nazrOn) return;
+  $('nzDist').textContent = cm > 0 ? cm.toFixed(1) : '--';
+  drawRangeBar(cm);
+  const [lo, hi] = nzRange();
+  const inRange = cm > 0 && cm >= lo && cm <= hi;
+  const now = Date.now();
+  if (inRange) {
+    nzInCount++;
+    nzLastIn = now;
+    if (nazrState === 'idle' && nzInCount >= Math.max(1, Number($('nzConfirm').value) || 1)) enterState('triggered', cm);
+  } else {
+    nzInCount = 0;
+    if (nazrState === 'triggered' && now - nzLastIn >= (Number($('nzRelease').value) || 0)) enterState('idle', cm);
+  }
+}
+
+async function startNazr() {
+  if (!writer) return alert('Connect the board first.');
+  stopSweep(); stopRadar();
+  nazrOn = true; nazrState = 'idle'; nzInCount = 0;
+  $('nzStart').textContent = 'Stop Nazr';
+  setNazrBadge();
+  nzEvent(`Started: trigger between ${nzRange()[0]} and ${nzRange()[1]} cm`);
+  enterState('idle', 0);
+  try {
+    await send('STREAM ' + $('nzInterval').value);
+    streaming = true; updateStreamBtn();
+  } catch (e) { log(e.message, 'err'); }
+}
+async function stopNazr() {
+  nazrOn = false;
+  nzTrigServo.stop(); nzIdleServo.stop();
+  $('nzStart').textContent = 'Start Nazr';
+  setNazrBadge();
+  nzEvent('Stopped');
+  $('nzMarker').style.display = 'none';
+  if (writer) {
+    try { await send('STREAM 0'); } catch {}
+    streaming = false; updateStreamBtn();
+  }
+}
+$('nzStart').onclick = () => (nazrOn ? stopNazr() : startNazr());
+
+// ===========================================================================
+// Console
+// ===========================================================================
+async function sendRaw() {
+  const v = $('cmd').value.trim();
+  if (!v || !writer) return;
+  log('> ' + v, 'tx');
+  await exclusive(() => writeRaw(v + '\n'));
+  $('cmd').value = '';
+}
+$('btnSend').onclick = sendRaw;
+$('cmd').addEventListener('keydown', e => { if (e.key === 'Enter') sendRaw(); });
+$('btnLogClear').onclick = () => $('log').innerHTML = '';
+
+renderPreview();
+setStatus(false);
+</script>
+</body>
+</html>
